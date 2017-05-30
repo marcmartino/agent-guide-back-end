@@ -1,0 +1,13 @@
+{
+  "name": "agent-guide-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {},
+  "author": "Marc Martino",
+  "license": "ISC",
+  "devDependencies": {},
+  "dependencies": {
+    "ws": "^3.0.0"
+  }
+}
