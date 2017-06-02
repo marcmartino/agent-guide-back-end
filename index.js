@@ -24,18 +24,12 @@ adminSocketServer.on('connection', function connection(adminSock, req) {
             if (statusObj.directive) {
                 const emitMessageName = sockUtils.evNames(euId).emitMessage;
 
-                if (sockEmitter.listenerCount(emitMessageName) > 0) {
-                    sockEmitter.emit(emitMessageName,
-                        statusObj.directive);
-                    adminSock.send('we got your message m8');
-                } else {
-                    adminSock.send(`no end user ${euId} listening`);
-                }
+                sockEmitter.emit(emitMessageName, statusObj.directive);
+                adminSock.send('we got your message m8');
             }
 
             adminSock.on("close", ((uId) => () => {
                 console.log(` on close occurred for admin - ${uId}`);
-
                 sockEmitter.emit(sockUtils.evNames(uId).disconnectedAdmin);
             })(euId));
         });
@@ -51,7 +45,7 @@ endUserSocketServer.on('connection', function connection(euSock, req) {
         //   userId: 7122972481 }
         if (statusObj.status === 'identify') {
             establishAdminConnectDisconnectELs(this, statusObj.userId);
-            removeMessageEL(statusObj.userId);
+            //removeMessageEL(statusObj.userId);
             establishMessageEL(this, statusObj.userId);
 
             sockEmitter.emit(sockUtils.evNames(statusObj.userId).connectedEndUser,
@@ -63,25 +57,21 @@ endUserSocketServer.on('connection', function connection(euSock, req) {
             euSock.send('identified your sock ' + statusObj.userId);
             euSock.on("close", ((uId) => () => {
                 console.log(` on close occurred for ${uId}`);
-                removeMessageEL(uId);
+                //removeMessageEL(uId);
                 sockEmitter.emit(sockUtils.evNames(uId).disconnectedEndUser);
             })(statusObj.userId));
         }
     });
 
     euSock.send('End User Connection Confirmed');
-})
+});
 
-function removeMessageEL(uId) {
+/*function removeMessageEL(uId) {
     console.log(`removing message listener for ${uId}`);
     sockEmitter.removeAllListeners(sockUtils.evNames(uId).emitMessage);
-}
+}*/
 function establishMessageEL(euSock, uId) {
     console.log('establishing emit message listener for ' + uId);
-    /*const evNames = sockUtils.evNames(uId);
-    sockEmitter.on(evNames.emitMessage, (directive) => {
-        euSock.send(directive);
-    });*/
     sockUtils.listenAndSend(sockEmitter, euSock, uId,
         {
             evName: sockUtils.evNames(uId).emitMessage,
@@ -90,29 +80,26 @@ function establishMessageEL(euSock, uId) {
 }
 
 function establishEUConnectDisconnectELs(sock, uId) {
-    const evNames = sockUtils.evNames(uId);
-
-    sockEmitter.removeAllListeners(sockUtils.evNames(uId).connectedEndUser);
-    sockEmitter.removeAllListeners(sockUtils.evNames(uId).disconnectedEndUser);
-    sockEmitter.on(evNames.connectedEndUser, ((sock, uId) => () => {
-        sock.send(`user connected ${uId}`);
-    })(sock, uId));
-    sockEmitter.on(evNames.disconnectedEndUser, ((sock, uId) => () => {
-        sock.send(`user disconnected ${uId}`);
-        sockEmitter.removeAllListeners(sockUtils.evNames(uId).connectedEndUser);
-    })(sock, uId));
+    sockUtils.listenAndSend(sockEmitter, sock, uId,
+        {
+            evName: sockUtils.evNames(uId).connectedEndUser,
+            sendMessage: 'user connected'
+        });
+    sockUtils.listenAndSend(sockEmitter, sock, uId,
+        {
+            evName: sockUtils.evNames(uId).disconnectedEndUser,
+            sendMessage: 'user disconnected'
+        });
 }
 function establishAdminConnectDisconnectELs(sock, uId) {
-    const evNames = sockUtils.evNames(uId);
-    console.log(`establishing admin connection events for ${uId}`);
-
-    sockEmitter.removeAllListeners(sockUtils.evNames(uId).connectedAdmin);
-    sockEmitter.removeAllListeners(sockUtils.evNames(uId).disconnectedAdmin);
-    sockEmitter.on(evNames.connectedAdmin, ((sock, uId) => () => {
-        sock.send(`admin connected ${uId}`);
-    })(sock, uId));
-    sockEmitter.on(evNames.disconnectedAdmin, ((sock, uId) => () => {
-        sock.send(`admin disconnected ${uId}`);
-        sockEmitter.removeAllListeners(sockUtils.evNames(uId).connectedEndUser);
-    })(sock, uId));
+    sockUtils.listenAndSend(sockEmitter, sock, uId,
+        {
+            evName: sockUtils.evNames(uId).connectedAdmin,
+            sendMessage: 'user connected'
+        });
+    sockUtils.listenAndSend(sockEmitter, sock, uId,
+        {
+            evName: sockUtils.evNames(uId).disconnectedAdmin,
+            sendMessage: 'user disconnected'
+        });
 }
