@@ -12,11 +12,16 @@ function evNames(id) {
 }
 function listenAndSend(emitter, sock, id, evListObj = {}) {
     // listenerObj = {evName, sendMessage}
-    emitter.on(evListObj.evName, ((sock, id, sendMessage) => (eventData) => {
+    emitter.removeAllListeners(evListObj.evName);
+    emitter.on(evListObj.evName, ((sock, id, evName, sendMessage) => (eventData) => {
         if (sock.readyState === WebSocket.OPEN) {
-            sock.send(templateMessage(sendMessage, id, eventData));
+            sock.send(JSON.stringify({
+                uId: id,
+                event: evName,
+                text: templateMessage(sendMessage, id, eventData)
+            }));
         }
-    })(sock, id, evListObj.sendMessage));
+    })(sock, id, evListObj.evName, evListObj.sendMessage));
 }
 
 function templateMessage(mess, id, eventData) {

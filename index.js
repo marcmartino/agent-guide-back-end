@@ -16,11 +16,12 @@ adminSocketServer.on('connection', function connection(adminSock, req) {
             establishEUConnectDisconnectELs(adminSock, euId);
 
             sockEmitter.emit(sockUtils.evNames(euId).connectedAdmin, euId);
+
+            //TODO: listenerCount won't work here anymore
             if (sockEmitter.listenerCount(sockUtils.evNames(euId).connectedAdmin)) {
                 sockEmitter.emit(sockUtils.evNames(euId).connectedEndUser, euId);
             }
 
-            console.log(`foreach end user  ${sockUtils.evNames(euId).emitMessage}`);
             if (statusObj.directive) {
                 const emitMessageName = sockUtils.evNames(euId).emitMessage;
 
@@ -45,19 +46,18 @@ endUserSocketServer.on('connection', function connection(euSock, req) {
         //   userId: 7122972481 }
         if (statusObj.status === 'identify') {
             establishAdminConnectDisconnectELs(this, statusObj.userId);
-            //removeMessageEL(statusObj.userId);
             establishMessageEL(this, statusObj.userId);
 
             sockEmitter.emit(sockUtils.evNames(statusObj.userId).connectedEndUser,
                 statusObj.userId);
+
+            // TODO: listenerCount won't work here anymore
             if (sockEmitter.listenerCount(sockUtils.evNames(statusObj.userId).connectedEndUser)) {
                 sockEmitter.emit(sockUtils.evNames(statusObj.userId).connectedAdmin, statusObj.userId);
             }
-
             euSock.send('identified your sock ' + statusObj.userId);
             euSock.on("close", ((uId) => () => {
                 console.log(` on close occurred for ${uId}`);
-                //removeMessageEL(uId);
                 sockEmitter.emit(sockUtils.evNames(uId).disconnectedEndUser);
             })(statusObj.userId));
         }
@@ -66,10 +66,6 @@ endUserSocketServer.on('connection', function connection(euSock, req) {
     euSock.send('End User Connection Confirmed');
 });
 
-/*function removeMessageEL(uId) {
-    console.log(`removing message listener for ${uId}`);
-    sockEmitter.removeAllListeners(sockUtils.evNames(uId).emitMessage);
-}*/
 function establishMessageEL(euSock, uId) {
     console.log('establishing emit message listener for ' + uId);
     sockUtils.listenAndSend(sockEmitter, euSock, uId,
